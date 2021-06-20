@@ -14,7 +14,7 @@ truncate -s 0 ./tmp/key.enc~
 for ff in "$@"; do
   zbarimg --raw -q "$ff" 2>/dev/null >> ./tmp/key.enc~
 done 
-cat ./tmp/key.enc~ | tr -d '\n' > ./tmp/key.enc && rm -f ./tmp/key.enc~
+tr -d '\n' < ./tmp/key.enc~ > ./tmp/key.enc && rm -f ./tmp/key.enc~
 
 base64 -d ./tmp/key.enc > ./tmp/key
 gpg --import ./tmp/key

@@ -20,7 +20,7 @@ length="${#keyenc}"
 while [[ "$ksplit" -le "$length" ]]; do
   qrencode -s 5 -l H -8 -o ./tmp/key-$ksplit.png "${keyenc:$ksplit:$splits}"
   convert ./tmp/key-$ksplit.png -alpha remove -alpha off ./tmp/key-$ksplit-flat.png
-  ksplit="$(($ksplit + $splits))"
+  ksplit="$((ksplit + splits))"
 done
 
 img2pdf --pagesize 8.5inx11in --output ./tmp/paperkey.pdf ./tmp/key-*-flat.png
