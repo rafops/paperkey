@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+mkdir -p secret
+
+echo 0>secret/key.enc
+for ff in $@; do
+  zbarimg --raw -q "$ff" 2>/dev/null >> secret/key.enc
+  rm -f "$ff"
+done 
+
+base64 -d secret/key.enc > secret/key
+gpg --import secret/key
+
+rm -r secret

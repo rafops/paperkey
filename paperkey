@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+export SOURCE_DIR
+SOURCE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+(
+  cd "$SOURCE_DIR" || exit
+
+  export DOCKER_TAG
+  DOCKER_TAG="$(echo ${PWD##*/}):latest"
+
+  export DOCKER_ENTRYPOINT
+  DOCKER_ENTRYPOINT="$1"
+  shift
+  [[ -z "$DOCKER_ENTRYPOINT" ]] && DOCKER_ENTRYPOINT="bash"
+
+  docker build -t "${DOCKER_TAG}" .
+  docker run -it --rm \
+   --entrypoint "$DOCKER_ENTRYPOINT" \
+   --network none \
+    -v "$HOME/.gnupg:/root/.gnupg" \
+    -v "$SOURCE_DIR/data:/root/data" \
+    "$DOCKER_TAG" "$@"
+)

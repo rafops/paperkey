@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+mkdir -p secret
+gpg --export-secret-keys "$1" | base64 -w 0 > secret/key.enc
+
+keyenc="$(cat secret/key.enc)"
+hsplit="$(expr $(echo "$keyenc" | wc -m) / 2 + 1)"
+
+qrencode -8 -o secret/key-p1.png "${keyenc:0:$hsplit}"
+qrencode -8 -o secret/key-p2.png "${keyenc:$hsplit:$hsplit}"
+
+convert secret/key-p1.png -alpha remove -alpha off secret/key-p1-flat.png
+convert secret/key-p2.png -alpha remove -alpha off secret/key-p2-flat.png
+
+img2pdf --pagesize 8.5inx11in --output secret/key.pdf secret/key-p*-flat.png
+
+ownerpwd="$(cat secret/key.enc | md5sum | awk '{print $1}')"
+userpwd="$(echo "$ownerpwd" | md5sum | awk '{print $1}')"
+pdftk secret/key.pdf cat output data/key.pdf owner_pw "$ownerpwd" user_pw "$userpwd"
+
+echo "data/key.pdf password is: $userpwd"
+rm -rf secret
