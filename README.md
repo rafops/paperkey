@@ -3,15 +3,15 @@
 ## Export
 
 ```
-./paperkey bin/export keyname
+./paperkey bin/export <key uid>
 ```
 
-Print paperkey PDF and its password and store in a safe location.
+Print paperkey PDF generated in data/paperkey.pdf and store it safely.
 
 ## Import
 
-Take a picture of each qrcode in the paperkey PDF and import the key:
+Save paperkey QR codes pictures in the data directory and import key:
 
 ```
-./paperkey bin/import data/key-1.jpg data/key-2.jpg
+./paperkey bin/import data/qrcode-*.jpg
 ```

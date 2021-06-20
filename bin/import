@@ -1,14 +1,22 @@
 #!/usr/bin/env bash
 
-mkdir -p secret
+set -euo pipefail
 
-echo 0>secret/key.enc
-for ff in $@; do
-  zbarimg --raw -q "$ff" 2>/dev/null >> secret/key.enc
-  rm -f "$ff"
+if [[ "$(whoami)" != "paperkey" ]] || [[ -z "$1" ]]; then
+  echo "Usage: ./paperkey $0 <key uid>"
+  exit
+fi
+
+cd "$HOME" || exit
+[[ -d ./tmp ]] || mkdir -p ./tmp
+
+truncate -s 0 ./tmp/key.enc~
+for ff in "$@"; do
+  zbarimg --raw -q "$ff" 2>/dev/null >> ./tmp/key.enc~
 done 
+cat ./tmp/key.enc~ | tr -d '\n' > ./tmp/key.enc && rm -f ./tmp/key.enc~
 
-base64 -d secret/key.enc > secret/key
-gpg --import secret/key
+base64 -d ./tmp/key.enc > ./tmp/key
+gpg --import ./tmp/key
 
-rm -r secret
+rm -f ./tmp/*

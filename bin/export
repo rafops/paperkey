@@ -1,22 +1,36 @@
 #!/usr/bin/env bash
 
-mkdir -p secret
-gpg --export-secret-keys "$1" | base64 -w 0 > secret/key.enc
+set -euo pipefail
 
-keyenc="$(cat secret/key.enc)"
-hsplit="$(expr $(echo "$keyenc" | wc -m) / 2 + 1)"
+if [[ "$(whoami)" != "paperkey" ]] || [[ -z "$1" ]]; then
+  echo "Usage: ./paperkey $0 <key uid>"
+  exit
+fi
 
-qrencode -8 -o secret/key-p1.png "${keyenc:0:$hsplit}"
-qrencode -8 -o secret/key-p2.png "${keyenc:$hsplit:$hsplit}"
+cd "$HOME" || exit
+[[ -d ./tmp ]] || mkdir -p ./tmp
 
-convert secret/key-p1.png -alpha remove -alpha off secret/key-p1-flat.png
-convert secret/key-p2.png -alpha remove -alpha off secret/key-p2-flat.png
+gpg --export-secret-keys "$1" | base64 -w 0 > ./tmp/key.enc
 
-img2pdf --pagesize 8.5inx11in --output secret/key.pdf secret/key-p*-flat.png
+keyenc="$(cat ./tmp/key.enc)"
+ksplit=0
+splits=1024
+length="${#keyenc}"
 
-ownerpwd="$(cat secret/key.enc | md5sum | awk '{print $1}')"
-userpwd="$(echo "$ownerpwd" | md5sum | awk '{print $1}')"
-pdftk secret/key.pdf cat output data/key.pdf owner_pw "$ownerpwd" user_pw "$userpwd"
+while [[ "$ksplit" -le "$length" ]]; do
+  qrencode -s 5 -l H -8 -o ./tmp/key-$ksplit.png "${keyenc:$ksplit:$splits}"
+  convert ./tmp/key-$ksplit.png -alpha remove -alpha off ./tmp/key-$ksplit-flat.png
+  ksplit="$(($ksplit + $splits))"
+done
 
-echo "data/key.pdf password is: $userpwd"
-rm -rf secret
+img2pdf --pagesize 8.5inx11in --output ./tmp/paperkey.pdf ./tmp/key-*-flat.png
+
+ownerpwd="$(md5sum ./tmp/key.enc | awk '{print $1}' | tr '[:lower:]' '[:upper:]')"
+userpwd="$(echo "$ownerpwd" | md5sum | awk '{print $1}' | tr '[:lower:]' '[:upper:]')"
+pdftk ./tmp/paperkey.pdf cat output data/paperkey.pdf owner_pw "$ownerpwd" user_pw "$userpwd"
+
+dialog --clear \
+  --title "Paperkey PDF password" \
+  --msgbox "\nThe password for data/paperkey.pdf is:\n\n$userpwd\n" 9 44
+
+rm -f ./tmp/*
